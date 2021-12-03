@@ -1,0 +1,36 @@
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+      <link rel="stylesheet" href="/styles/bootstrap.min.css">
+      <link rel="stylesheet" href="/styles/main.css">
+      <script src="/scripts/jquery-3.6.0.min.js"></script>
+      <script src="/scripts/bootstrap.bundle.min.js"></script>
+      <script src="/scripts/jszip.min.js"></script>
+      <script src="/scripts/FileSaver.min.js"></script>
+  </head>
+  <body>
+    <div class="extension">
+      <div class="container">
+        <div class="input-group mb-3">
+          <div class="input-group-prepend">
+            <span class="input-group-text" id="basic-addon1">商品编码</span>
+          </div>
+          <input id="num" type="text" class="form-control" placeholder="商品编码" aria-label="商品编码">
+        </div>
+        <div class="input-group mb-3">
+          <div class="input-group-prepend">
+            <span class="input-group-text" id="basic-addon1">规格</span>
+          </div>
+          <input id="spec" type="text" class="form-control" placeholder="规格" aria-label="规格">
+        </div>
+
+        <div class="btn-group" role="group" aria-label="Basic example">
+          <button id="getimg" class="btn btn-primary"> 提取京东主图 </button>
+          <button id="sendinfo" class="btn btn-success"> 上传药品信息 </button>
+        </div>
+      </div>
+    </div>
+    <script src="/scripts/medJSON.js"></script>
+    <script src="/scripts/popup.js"></script>
+  </body>
+</html>
