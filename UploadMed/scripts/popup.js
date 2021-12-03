@@ -1,8 +1,18 @@
 let getimg = document.getElementById("getimg");
 let sendinfo = document.getElementById("sendinfo");
+let getfromweb = document.getElementById("getfromweb");
+let sendfromweb = document.getElementById("sendfromweb");
+
 let num = document.getElementById("num");
 let spec = document.getElementById("spec");
+let enterprise = document.getElementById("enterprise");
 
+
+/* 
+    --------
+    提取京东主图
+    --------
+*/
 getimg.addEventListener("click", async () => {
     let [tab] = await chrome.tabs.query({ active: true, currentWindow: true});
     chrome.scripting.executeScript(
@@ -73,11 +83,15 @@ function getBase64Image(imgSrc, callback) {
 }
 
 
+/* 
+    --------
+    上传药品信息
+    --------
+*/
 sendinfo.addEventListener("click", async () => {
     //读取填写的信息
-    let medInfo = getInfo();
-    console.log(medInfo);
-
+    var medInfo = getInfo();
+    enterprise.value = medInfo.enterprise;
     //执行setInfo
     let [tab] = await chrome.tabs.query({ active: true, currentWindow: true});
     chrome.scripting.executeScript({
@@ -92,13 +106,15 @@ function getInfo() {
     for (var i=0; i<jsonArr.length; i++)
         if (productNum == jsonArr[i].productNum) {
             spec.value = jsonArr[i].specificationOriginal;
-            return {
+            var medInfo = {
                 "approvalNum": jsonArr[i].approvalNum,
                 "specification": jsonArr[i].specification,
                 "productNum": jsonArr[i].productNum,
                 "price": jsonArr[i].price,
-                "inventory": jsonArr[i].inventory
+                "inventory": jsonArr[i].inventory,
+                "enterprise": jsonArr[i].enterprise
             };
+            return medInfo;
         }
 }
 
@@ -106,6 +122,7 @@ function sendInfo(medInfo) {
     var layer1 = document.querySelectorAll(".wb-mod-t");
     var layer2 = document.querySelectorAll("#nav-1 ul ul");
     var box, candy, btn, chooses;
+    var title;
     var mevent = new Event("input", { bubbles: true });;
 
     //国药准字
@@ -175,6 +192,14 @@ function sendInfo(medInfo) {
         chooses = document.querySelectorAll("li[data-attrvalues]");
         chooses[2].click();
 
+        /*
+        //商家sku
+        candy = medInfo.productNum;
+        box = layer1[5].querySelectorAll("input")[58];
+        box.value = candy;
+        box.click();
+        */
+
         //运费
         var layer3 = document.querySelectorAll("#nav-10 ul ul");
 
@@ -198,13 +223,127 @@ function sendInfo(medInfo) {
 }
 
 
-
-/*
-function setBtnBackgroundColor() {
-    chrome.storage.sync.get("color", ({ color }) => {
-        getInfo.style.backgroundColor = color;
+/* 
+    --------
+    保存网页信息
+    --------
+*/
+getfromweb.addEventListener("click", async () => {
+    let [tab] = await chrome.tabs.query({ active: true, currentWindow: true});
+    chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        function: getFromWeb,
     });
+});
+
+function getFromWeb() {
+    chrome.storage.sync.clear();
+    var keys = document.querySelectorAll("dl.clearfix dt");
+    medInfo = {};
+    medInfo["品牌："] = document.querySelectorAll("#parameter-brand a")[0].innerHTML;
+    for (var i=0; i<keys.length; i++) {
+        value = document.querySelectorAll("dl.clearfix dd")[i];
+        medInfo[keys[i].innerHTML + '：'] = value.innerHTML;
+    }
+    chrome.storage.sync.set(medInfo);
 }
+
+
+/* 
+    --------
+    上传网页信息
+    --------
+*/
+sendfromweb.addEventListener("click", async () => {
+    let [tab] = await chrome.tabs.query({ active: true, currentWindow: true});
+    chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        function: sendFromWeb,
+    });
+});
+
+function sendFromWeb() {
+    var layer1 = document.querySelectorAll(".wb-mod-t");
+    var layer2 = layer1[3].querySelectorAll("div.clearfix");
+    var labels, box , chooses, brand;
+    var mevent = new Event("input", { bubbles: true });
+
+    //上传药品详细信息
+    labels = layer2[2].querySelectorAll("label");
+    chrome.storage.sync.get((medInfo) => {
+        for (var i=0; i<labels.length; i++) {
+            var label = labels[i];
+            var reg1 = label.innerHTML == "药品分类：";
+            var reg2 = label.innerHTML == "药品类型：";
+            var reg3 = label.innerHTML == "剂型：";
+            var reg4 = label.innerHTML == "适用人群：";
+            if (medInfo.hasOwnProperty(label.innerHTML)) {
+                //如果是直接填写
+                if (!(reg1 || reg2 || reg3 || reg4)) {
+                    box = label.parentNode.querySelectorAll("input")[0];
+                    if (box.value == "") {
+                        box.value = medInfo[label.innerHTML];
+                        box.dispatchEvent(mevent);
+                    }
+                //如果是药品分类
+                } else if (reg1) {
+                    box = label.parentNode.querySelectorAll("input")[0];
+                    box.click();
+                    chooses = label.parentNode.querySelectorAll("li");
+                    for (var j=0; j<chooses.length; j++)
+                        if (chooses[j].innerHTML == medInfo[label.innerHTML])
+                            chooses[j].click();
+                //如果是药品类型
+                } else if (reg2) {
+                    box = label.parentNode.querySelectorAll("span")[0];
+                    box.click();
+                    chooses = label.parentNode.querySelectorAll("li");
+                    for (var j=0; j<chooses.length; j++)
+                        if (chooses[j].innerHTML == medInfo[label.innerHTML])
+                            chooses[j].click();
+                //如果是剂型
+                } else if (reg3) {
+                    box = label.parentNode.querySelectorAll("input")[0];
+                    box.click();
+                    chooses = label.parentNode.querySelectorAll("li");
+                    for (var j=0; j<chooses.length; j++)
+                        if (chooses[j].innerHTML == medInfo[label.innerHTML])
+                            chooses[j].click();
+                }  
+            }
+        }
+    });
+    //更改标题
+    chrome.storage.sync.get((medInfo) => {
+        box = layer1[1].querySelectorAll("input")[1];
+        title = box.value;
+        title = medInfo["品牌："] + " " + title + " " + medInfo["适用症/功能主治："];
+        title = title.replace(/[，。、]/g, "");
+        box.value = title;
+        box.dispatchEvent(mevent);
+    });
+    //上传品牌
+    chrome.storage.sync.get("品牌：", (medInfo) => {
+        console.log(medInfo["品牌："]);
+        brand = medInfo["品牌："];
+        box = layer1[1].querySelectorAll("span.pop-select-placeholder")[1];
+        box.click();
+    });
+    setTimeout(() => {
+        box = document.querySelectorAll(".radio-search__input")[0];
+        box.value = brand;
+        box.dispatchEvent(mevent);
+        document.querySelectorAll(".radio-search__button")[0].click();
+        setTimeout(() => {
+            chooses = document.querySelectorAll(".pop-radio-input");
+            chooses[0].click();
+            document.querySelectorAll(".radio-search__operation")[0].click();
+        }, 1000);
+    }, 500);
+}
+
+
+
 
 /*
 getInfo.addEventListener("click", async () => {
