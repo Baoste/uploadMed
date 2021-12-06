@@ -266,7 +266,7 @@ function sendFromWeb() {
     var layer1 = document.querySelectorAll(".wb-mod-t");
     var layer2 = layer1[3].querySelectorAll("div.clearfix");
     var labels, box , chooses, brand;
-    var mevent = new Event("input", { bubbles: true });
+    var mevent = new Event("change", { bubbles: true });
 
     //上传药品详细信息
     labels = layer2[2].querySelectorAll("label");
